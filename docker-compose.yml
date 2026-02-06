@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: orgta-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - orgta-network
+
+  backend:
+    build: ./backend
+    container_name: orgta-backend
+    ports:
+      - "3000:3000"
+    environment:
+      MONGODB_URI: mongodb://admin:password@mongodb:27017/orgta?authSource=admin
+      PORT: 3000
+      JWT_SECRET: your_jwt_secret_key_here
+      GOOGLE_CLIENT_ID: your_google_client_id_here
+      GOOGLE_CLIENT_SECRET: your_google_client_secret_here
+      FRONTEND_URL: http://localhost:5173
+    depends_on:
+      - mongodb
+    networks:
+      - orgta-network
+    command: npm run dev
+
+  frontend:
+    build: ./frontend
+    container_name: orgta-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3000/api
+      VITE_SOCKET_URL: http://localhost:3000
+      VITE_GOOGLE_CLIENT_ID: your_google_client_id_here
+    depends_on:
+      - backend
+    networks:
+      - orgta-network
+    command: npm run dev
+
+volumes:
+  mongodb_data:
+
+networks:
+  orgta-network:
+    driver: bridge
